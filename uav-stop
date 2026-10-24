@@ -1,0 +1,47 @@
+#!/bin/bash
+
+echo "======================================"
+echo "      Stopping UAV Simulation"
+echo "======================================"
+
+echo "[1/4] Stopping QGroundControl..."
+pkill -f "QGroundControl" 2>/dev/null || true
+
+echo "[2/4] Stopping MAVProxy..."
+pkill -f "mavproxy.py" 2>/dev/null || true
+
+echo "[3/4] Stopping ArduCopter SITL..."
+pkill -f "build/sitl/bin/arducopter" 2>/dev/null || true
+
+# Close leftover ArduPilot SITL Terminator window
+pkill -f "terminator.*ArduPilot SITL" 2>/dev/null || true
+
+echo "[4/4] Stopping Gazebo..."
+pkill -f "gz sim" 2>/dev/null || true
+
+echo ""
+echo "Waiting for processes to exit..."
+sleep 2
+
+# Force-kill anything that did not respond to SIGTERM
+pkill -9 -f "QGroundControl" 2>/dev/null || true
+pkill -9 -f "mavproxy.py" 2>/dev/null || true
+pkill -9 -f "build/sitl/bin/arducopter" 2>/dev/null || true
+pkill -9 -f "gz sim" 2>/dev/null || true
+
+sleep 1
+
+echo ""
+echo "Checking for remaining UAV processes..."
+
+if pgrep -af "gz sim|arducopter|mavproxy|QGroundControl"; then
+    echo ""
+    echo "WARNING: Some UAV processes are still running."
+else
+    echo "All UAV processes stopped successfully."
+fi
+
+echo ""
+echo "======================================"
+echo " UAV simulation environment stopped."
+echo "======================================"

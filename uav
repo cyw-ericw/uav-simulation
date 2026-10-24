@@ -1,0 +1,66 @@
+#!/bin/bash
+
+set -e
+
+echo "======================================"
+echo "      UAV Simulation Environment"
+echo "======================================"
+
+if [ ! -f "$HOME/miniconda3/etc/profile.d/conda.sh" ]; then
+    echo "Error: Miniconda not found."
+    exit 1
+fi
+
+if [ ! -f "$HOME/ardupilot_gazebo/build/libArduPilotPlugin.so" ]; then
+    echo "Error: ArduPilot Gazebo plugin not found."
+    exit 1
+fi
+
+
+echo "[1/3] Starting Gazebo..."
+
+terminator -T "Gazebo" -e "bash -c '
+export GZ_SIM_RESOURCE_PATH=\$HOME/ardupilot_gazebo/models:\$HOME/ardupilot_gazebo/worlds
+export GZ_SIM_SYSTEM_PLUGIN_PATH=\$HOME/ardupilot_gazebo/build
+exec gz sim -v4 -r \$HOME/ardupilot_gazebo/worlds/iris_runway.sdf
+'" &
+
+sleep 5
+
+
+echo "[2/3] Starting ArduPilot SITL..."
+
+terminator -T "ArduPilot SITL" -e "bash -c '
+source \$HOME/miniconda3/etc/profile.d/conda.sh
+conda activate uav_sim
+cd \$HOME/ardupilot
+exec Tools/autotest/sim_vehicle.py -v ArduCopter -f gazebo-iris --model JSON
+'" &
+
+sleep 3
+
+
+echo "[3/3] Checking QGroundControl..."
+
+QGC_PATH="$HOME/Downloads/QGroundControl-x86_64.AppImage"
+
+if [ -f "$QGC_PATH" ]; then
+    echo "QGroundControl found. Starting QGroundControl..."
+
+    chmod +x "$QGC_PATH"
+    "$QGC_PATH" &
+
+else
+    echo
+    echo "QGroundControl not found."
+    echo "Gazebo and ArduPilot SITL will continue running."
+    echo
+    echo "Expected QGroundControl path:"
+    echo "$QGC_PATH"
+fi
+
+
+echo
+echo "======================================"
+echo " UAV simulation environment launched!"
+echo "======================================"
