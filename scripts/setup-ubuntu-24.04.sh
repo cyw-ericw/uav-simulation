@@ -1,45 +1,3 @@
-cat > setup.sh <<'EOF'
-#!/bin/bash
-
-set -e
-
-PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-echo "======================================"
-echo "      UAV Simulation Setup"
-echo "======================================"
-
-if [ ! -f /etc/os-release ]; then
-    echo "Error: Cannot detect Ubuntu version."
-    exit 1
-fi
-
-source /etc/os-release
-
-echo "Detected OS: $PRETTY_NAME"
-echo
-
-case "$VERSION_ID" in
-    "22.04")
-        echo "Using Ubuntu 22.04 setup..."
-        bash "$PROJECT_ROOT/scripts/setup-ubuntu-22.04.sh"
-        ;;
-
-    "24.04")
-        echo "Using Ubuntu 24.04 setup..."
-        bash "$PROJECT_ROOT/scripts/setup-ubuntu-24.04.sh"
-        ;;
-
-    *)
-        echo "Error: Ubuntu $VERSION_ID is not supported."
-        echo "Supported versions: 22.04 and 24.04"
-        exit 1
-        ;;
-esac
-EOF
-
-
-cat > scripts/setup-ubuntu-24.04.sh <<'EOF'
 #!/bin/bash
 
 set -e
@@ -259,11 +217,11 @@ echo "[11/12] Installing uav and uav-stop commands..."
 
 mkdir -p "$HOME/bin"
 
-cp "$PROJECT_ROOT/uav" "$HOME/bin/uav"
-cp "$PROJECT_ROOT/uav-stop" "$HOME/bin/uav-stop"
+chmod +x "$PROJECT_ROOT/uav"
+chmod +x "$PROJECT_ROOT/uav-stop"
 
-chmod +x "$HOME/bin/uav"
-chmod +x "$HOME/bin/uav-stop"
+ln -sfn "$PROJECT_ROOT/uav" "$HOME/bin/uav"
+ln -sfn "$PROJECT_ROOT/uav-stop" "$HOME/bin/uav-stop"
 
 if ! grep -Fq 'export PATH="$HOME/bin:$PATH"' "$HOME/.profile" 2>/dev/null; then
     echo 'export PATH="$HOME/bin:$PATH"' >> "$HOME/.profile"
@@ -313,122 +271,3 @@ echo
 echo "Stop everything with:"
 echo
 echo "    uav-stop"
-EOF
-
-
-cat > uav <<'EOF'
-#!/bin/bash
-
-set -e
-
-echo "======================================"
-echo "      UAV Simulation Environment"
-echo "======================================"
-
-if [ ! -f "$HOME/miniconda3/etc/profile.d/conda.sh" ]; then
-    echo "Error: Miniconda not found."
-    exit 1
-fi
-
-if [ ! -f "$HOME/ardupilot_gazebo/build/libArduPilotPlugin.so" ]; then
-    echo "Error: ArduPilot Gazebo plugin not found."
-    exit 1
-fi
-
-if [ ! -f "$HOME/Downloads/QGroundControl-x86_64.AppImage" ]; then
-    echo "Error: QGroundControl AppImage not found."
-    exit 1
-fi
-
-
-echo "[1/3] Starting Gazebo..."
-
-terminator -T "Gazebo" -e "bash -c '
-export GZ_SIM_RESOURCE_PATH=\$HOME/ardupilot_gazebo/models:\$HOME/ardupilot_gazebo/worlds
-export GZ_SIM_SYSTEM_PLUGIN_PATH=\$HOME/ardupilot_gazebo/build
-exec gz sim -v4 -r \$HOME/ardupilot_gazebo/worlds/iris_runway.sdf
-'" &
-
-sleep 5
-
-
-echo "[2/3] Starting ArduPilot SITL..."
-
-terminator -T "ArduPilot SITL" -e "bash -c '
-source \$HOME/miniconda3/etc/profile.d/conda.sh
-conda activate uav_sim
-cd \$HOME/ardupilot
-exec Tools/autotest/sim_vehicle.py -v ArduCopter -f gazebo-iris --model JSON
-'" &
-
-sleep 3
-
-
-echo "[3/3] Starting QGroundControl..."
-
-chmod +x "$HOME/Downloads/QGroundControl-x86_64.AppImage"
-"$HOME/Downloads/QGroundControl-x86_64.AppImage" &
-
-
-echo
-echo "======================================"
-echo " UAV simulation environment launched!"
-echo "======================================"
-EOF
-
-
-cat > uav-stop <<'EOF'
-#!/bin/bash
-
-echo "======================================"
-echo "      Stopping UAV Simulation"
-echo "======================================"
-
-echo "[1/4] Stopping QGroundControl..."
-pkill -f "QGroundControl" 2>/dev/null || true
-
-echo "[2/4] Stopping MAVProxy..."
-pkill -f "mavproxy.py" 2>/dev/null || true
-
-echo "[3/4] Stopping ArduCopter SITL..."
-pkill -f "build/sitl/bin/arducopter" 2>/dev/null || true
-pkill -f "terminator.*ArduPilot SITL" 2>/dev/null || true
-
-echo "[4/4] Stopping Gazebo..."
-pkill -f "gz sim" 2>/dev/null || true
-
-echo
-echo "Waiting for processes to exit..."
-sleep 2
-
-pkill -9 -f "QGroundControl" 2>/dev/null || true
-pkill -9 -f "mavproxy.py" 2>/dev/null || true
-pkill -9 -f "build/sitl/bin/arducopter" 2>/dev/null || true
-pkill -9 -f "gz sim" 2>/dev/null || true
-
-sleep 1
-
-echo
-echo "Checking for remaining UAV processes..."
-
-if pgrep -af "gz sim|arducopter|mavproxy|QGroundControl"; then
-    echo
-    echo "WARNING: Some UAV processes are still running."
-else
-    echo "All UAV processes stopped successfully."
-fi
-
-echo
-echo "======================================"
-echo " UAV simulation environment stopped."
-echo "======================================"
-EOF
-
-
-chmod +x setup.sh
-chmod +x scripts/setup-ubuntu-24.04.sh
-chmod +x uav
-chmod +x uav-stop
-
-echo
-echo "Files written successfully."

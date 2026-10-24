@@ -180,11 +180,11 @@ echo "[10/11] Installing UAV commands..."
 
 mkdir -p "$HOME/bin"
 
-cp "$PROJECT_ROOT/uav" "$HOME/bin/uav"
-cp "$PROJECT_ROOT/uav-stop" "$HOME/bin/uav-stop"
+chmod +x "$PROJECT_ROOT/uav"
+chmod +x "$PROJECT_ROOT/uav-stop"
 
-chmod +x "$HOME/bin/uav"
-chmod +x "$HOME/bin/uav-stop"
+ln -sfn "$PROJECT_ROOT/uav" "$HOME/bin/uav"
+ln -sfn "$PROJECT_ROOT/uav-stop" "$HOME/bin/uav-stop"
 
 if ! grep -Fq 'export PATH="$HOME/bin:$PATH"' "$HOME/.profile" 2>/dev/null; then
     echo 'export PATH="$HOME/bin:$PATH"' >> "$HOME/.profile"
