@@ -193,9 +193,6 @@ fi
 echo
 echo "[8/12] Building ArduPilot SITL..."
 
-if [ -f "$HOME/venv-ardupilot/bin/activate" ]; then
-    source "$HOME/venv-ardupilot/bin/activate"
-fi
 
 cd "$ARDUPILOT_DIR"
 
