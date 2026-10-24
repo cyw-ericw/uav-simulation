@@ -39,7 +39,7 @@ The setup script automatically detects the Ubuntu version and runs the correspon
 Clone this repository:
 
 ```bash
-git clone <REPOSITORY_URL>
+git clone git@github.com:cyw-ericw/uav-simulation.git
 cd uav-simulation
 ```
 
@@ -244,6 +244,9 @@ QGroundControl      Working
 uav command         Working
 uav-stop command    Working
 ```
+
+
+
 
 Ubuntu 22.04:
 
