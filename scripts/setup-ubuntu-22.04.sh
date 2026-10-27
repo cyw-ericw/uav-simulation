@@ -151,6 +151,10 @@ cd "$ARDUPILOT_DIR"
 
 
 echo
+
+# Use Gazebo Harmonic for ardupilot_gazebo
+export GZ_VERSION=harmonic
+
 echo "[9/11] Setting up ardupilot_gazebo..."
 
 if [ ! -d "$ARDUPILOT_GAZEBO_DIR/.git" ]; then
