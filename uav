@@ -1,6 +1,10 @@
 #!/bin/bash
 
 set -e
+UAV_PID_FILE="$HOME/.cache/uav-terminator.pids"
+mkdir -p "$HOME/.cache"
+if pgrep -f "[g]z sim|[/]build/sitl/bin/arducopter|[T]ools/autotest/sim_vehicle.py" >/dev/null; then echo "UAV simulation is already running. Use uav-stop first."; exit 1; fi
+: > "$UAV_PID_FILE"
 
 echo "======================================"
 echo "      UAV Simulation Environment"
@@ -19,24 +23,27 @@ fi
 
 echo "[1/3] Starting Gazebo..."
 
-terminator -T "Gazebo" -e "bash -c '
+terminator -u -T "Gazebo" -e "bash -c '
 export GZ_SIM_RESOURCE_PATH=\$HOME/ardupilot_gazebo/models:\$HOME/ardupilot_gazebo/worlds
 export GZ_SIM_SYSTEM_PLUGIN_PATH=\$HOME/ardupilot_gazebo/build
 exec gz sim -v4 -r \$HOME/ardupilot_gazebo/worlds/iris_runway.sdf
 '" &
 
+echo "$!" >> "$UAV_PID_FILE"
 sleep 5
 
 
 echo "[2/3] Starting ArduPilot SITL..."
 
-terminator -T "ArduPilot SITL" -e "bash -c '
+terminator -u -T "ArduPilot SITL" -e "bash -c '
 source \$HOME/miniconda3/etc/profile.d/conda.sh
 conda activate uav_sim
+export PYTHONNOUSERSITE=1
 cd \$HOME/ardupilot
 exec Tools/autotest/sim_vehicle.py -v ArduCopter -f gazebo-iris --model JSON
 '" &
 
+echo "$!" >> "$UAV_PID_FILE"
 sleep 3
 
 
